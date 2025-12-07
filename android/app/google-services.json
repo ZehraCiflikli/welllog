@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "648236619676",
+    "project_id": "welllog-84db4",
+    "storage_bucket": "welllog-84db4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:648236619676:android:585399c12de7cc2683da59",
+        "android_client_info": {
+          "package_name": "com.example.welllog"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD13qX-5sAt88pOBtqhpgR5yj4jty0dBVE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
