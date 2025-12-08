@@ -3,11 +3,17 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:welllog/providers/auth_provider.dart';
 
-class LoginPage extends StatelessWidget {
-  LoginPage({super.key});
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
 
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
+  bool _isObscure = true;
 
   @override
   Widget build(BuildContext context) {
@@ -24,9 +30,7 @@ class LoginPage extends StatelessWidget {
                   size: 150,
                   color: Colors.green.shade400,
                 ),
-
                 const SizedBox(height: 16),
-
                 Text(
                   "HOŞ GELDİN",
                   style: GoogleFonts.poppins(
@@ -35,49 +39,34 @@ class LoginPage extends StatelessWidget {
                     color: Colors.green.shade700,
                   ),
                 ),
-
                 const SizedBox(height: 24),
-
                 _label("E-posta"),
                 const SizedBox(height: 6),
                 _inputField("E-postanızı girin", emailController),
-
                 const SizedBox(height: 14),
-
                 _label("Şifre"),
                 const SizedBox(height: 6),
                 _passwordField("Şifrenizi girin", passwordController),
-
                 const SizedBox(height: 24),
-
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () async {
-                      final auth = Provider.of<AuthProvider>(
-                        context,
-                        listen: false,
-                      );
-
+                      final auth = Provider.of<AuthProvider>(context, listen: false);
                       final error = await auth.loginUser(
                         email: emailController.text,
                         password: passwordController.text,
                       );
-
                       if (error == null) {
                         Navigator.pushReplacementNamed(context, "/home");
                       } else {
-                        ScaffoldMessenger.of(
-                          context,
-                        ).showSnackBar(SnackBar(content: Text(error)));
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
                       }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green.shade600,
                       minimumSize: const Size(double.infinity, 52),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     child: Text(
                       "GİRİŞ YAP",
@@ -89,13 +78,9 @@ class LoginPage extends StatelessWidget {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 18),
-
                 GestureDetector(
-                  onTap: () {
-                    Navigator.pushReplacementNamed(context, "/register");
-                  },
+                  onTap: () => Navigator.pushReplacementNamed(context, "/register"),
                   child: Text(
                     "Hesabın yok mu? Kayıt ol",
                     style: GoogleFonts.poppins(
@@ -138,13 +123,23 @@ class LoginPage extends StatelessWidget {
   Widget _passwordField(String hint, TextEditingController controller) {
     return TextField(
       controller: controller,
-      obscureText: true,
+      obscureText: _isObscure,
       decoration: InputDecoration(
         hintText: hint,
-        suffixIcon: const Icon(Icons.lock_outline),
         filled: true,
         fillColor: Colors.grey.shade100,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        suffixIcon: IconButton(
+          icon: Icon(
+            _isObscure ? Icons.lock_outline : Icons.lock_open,
+            color: Colors.green.shade700,
+          ),
+          onPressed: () {
+            setState(() {
+              _isObscure = !_isObscure;
+            });
+          },
+        ),
       ),
     );
   }
