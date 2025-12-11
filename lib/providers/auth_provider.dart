@@ -1,13 +1,31 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+// Secure Storage için yeni import
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
+
+// Secure Storage Tanımları
+final _storage = const FlutterSecureStorage();
+const String _isLoggedInKey = 'is_logged_in';
+
+final FirebaseAuth _auth = FirebaseAuth.instance;
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
   final FirestoreService _firestoreService = FirestoreService();
 
+  // Mevcut isLoading değişkeni uygulamanın genel yüklenme durumunu gösteriyor.
+  // Oturum kontrolü için ayrı bir değişken tanımlayalım.
+  bool _isAppLoading =
+      true; // Uygulamanın başlangıçta oturum kontrolü yapıp yapmadığı
+  bool _isLoggedIn = false; // Oturumun açık olup olmadığı
+
+  bool get isAppLoading => _isAppLoading;
+  bool get isLoggedIn => _isLoggedIn;
+
+  // Mevcut isLoading değişkenini koruyoruz
   bool isLoading = false;
 
   /// 🔥 Firebase'de o anda giriş yapan kullanıcıyı döner
@@ -16,9 +34,37 @@ class AuthProvider with ChangeNotifier {
   /// 🔥 Firestore'dan çekilen kullanıcı verisi
   Map<String, dynamic>? currentUserData;
 
+  // ----------------------------------------------------
+  // 🔑 1. YENİ METOT: UYGULAMA BAŞLANGICINDA OTURUM KONTROLÜ
+  // ----------------------------------------------------
+  Future<void> autoLogin() async {
+    _isAppLoading = true;
+    notifyListeners();
+
+    // Firebase Auth, token yönetimini ve oturumun kalıcılığını (restart'larda bile)
+    // otomatik olarak halleder. Biz sadece durumu kontrol ediyoruz.
+    final currentUser = _auth.currentUser; // Firebase'deki mevcut kullanıcı
+
+    if (currentUser != null) {
+      _isLoggedIn = true;
+      // Oturum varsa, Firestore'dan kullanıcı verisini de çekelim
+      await loadCurrentUser();
+    } else {
+      // Firebase'de kullanıcı yoksa, daha önce bir işaret koyup koymadığımızı kontrol et.
+      // (Bu adım teknik olarak Firebase tarafından yapılmasına rağmen, mantıksal temizlik için faydalı)
+      final storedStatus = await _storage.read(key: _isLoggedInKey);
+      _isLoggedIn = storedStatus == 'true';
+    }
+
+    _isAppLoading = false;
+    notifyListeners();
+  }
+  // ----------------------------------------------------
+
   // ------------------------------- //
   //  REGISTER (KAYIT OLMA)
   // ------------------------------- //
+  // ... (Bu kısım aynı kalıyor) ...
   Future<String?> registerUser({
     required String fullName,
     required String email,
@@ -44,6 +90,10 @@ class AuthProvider with ChangeNotifier {
       );
 
       await _firestoreService.saveUser(appUser);
+
+      // Kayıt başarılıysa oturum işaretini kaydet
+      await _storage.write(key: _isLoggedInKey, value: 'true');
+      _isLoggedIn = true; // Durumu güncelle
 
       isLoading = false;
       notifyListeners();
@@ -73,6 +123,11 @@ class AuthProvider with ChangeNotifier {
         return "E-posta veya şifre hatalı";
       }
 
+      // 🔑 2. DEĞİŞİKLİK: Giriş başarılıysa kalıcılık işaretini kaydet
+      await _storage.write(key: _isLoggedInKey, value: 'true');
+      _isLoggedIn = true; // Durumu güncelle
+      await loadCurrentUser(); // Kullanıcı verisini çek
+
       isLoading = false;
       notifyListeners();
       return null;
@@ -84,7 +139,7 @@ class AuthProvider with ChangeNotifier {
   }
 
   // ------------------------------- //
-  //  FIRESTORE -> KULLANICI VERISI GETIRME
+  //  FIRESTORE -> KULLANICI VERISI GETIRME (AYNI KALIYOR)
   // ------------------------------- //
   Future<void> loadCurrentUser() async {
     if (user == null) return;
@@ -100,10 +155,16 @@ class AuthProvider with ChangeNotifier {
   // ------------------------------- //
   Future<void> logout() async {
     await FirebaseAuth.instance.signOut();
+
+    // 🔑 3. DEĞİŞİKLİK: Çıkışta kalıcılık işaretini sil
+    await _storage.delete(key: _isLoggedInKey);
+
+    _isLoggedIn = false; // Durumu güncelle
     currentUserData = null;
     notifyListeners();
   }
 
+  // ... (updateUserData kısmı aynı kalıyor) ...
   Future<void> updateUserData({
     required String fullName,
     required int age,
@@ -119,7 +180,7 @@ class AuthProvider with ChangeNotifier {
       "weight": weight,
     });
 
-    await loadCurrentUser(); // güncel veriyi yeniden çek
+    await loadCurrentUser();
     notifyListeners();
   }
 
