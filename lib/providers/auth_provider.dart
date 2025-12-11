@@ -122,4 +122,10 @@ class AuthProvider with ChangeNotifier {
     await loadCurrentUser(); // güncel veriyi yeniden çek
     notifyListeners();
   }
+
+  Future<void> sendResetEmail() async {
+    if (user == null) return;
+
+    await FirebaseAuth.instance.sendPasswordResetEmail(email: user!.email!);
+  }
 }

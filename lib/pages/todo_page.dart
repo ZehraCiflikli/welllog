@@ -27,8 +27,17 @@ class _TodoPageState extends State<TodoPage> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("TodoPage", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                      Text("Günlük Takip", style: TextStyle(color: Colors.grey, fontSize: 12)),
+                      Text(
+                        "TodoPage",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                      Text(
+                        "Günlük Takip",
+                        style: TextStyle(color: Colors.grey, fontSize: 12),
+                      ),
                     ],
                   ),
                 ],
@@ -38,13 +47,25 @@ class _TodoPageState extends State<TodoPage> {
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 children: const [
-                  TrackingCard(title: "Ruh Hali Takibi", icon: Icons.sentiment_satisfied_alt),
+                  TrackingCard(
+                    title: "Ruh Hali Takibi",
+                    icon: Icons.sentiment_satisfied_alt,
+                  ),
                   TrackingCard(title: "Sigara Takibi", icon: Icons.smoke_free),
                   TrackingCard(title: "Kahve Takibi", icon: Icons.coffee),
-                  TrackingCard(title: "Cilt Bakımı Takibi", icon: Icons.face_retouching_natural),
-                  TrackingCard(title: "Ekran Süresi Takibi", icon: Icons.smartphone),
+                  TrackingCard(
+                    title: "Cilt Bakımı Takibi",
+                    icon: Icons.face_retouching_natural,
+                  ),
+                  TrackingCard(
+                    title: "Ekran Süresi Takibi",
+                    icon: Icons.smartphone,
+                  ),
                   TrackingCard(title: "Öğün Takibi", icon: Icons.restaurant),
-                  TrackingCard(title: "Adım Takibi", icon: Icons.directions_walk),
+                  TrackingCard(
+                    title: "Adım Takibi",
+                    icon: Icons.directions_walk,
+                  ),
                   TrackingCard(title: "Uyku Takibi", icon: Icons.bedtime),
                   TrackingCard(title: "Su İçme Takibi", icon: Icons.water_drop),
                   SizedBox(height: 20),
@@ -104,7 +125,13 @@ class _TrackingCardState extends State<TrackingCard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(widget.title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                Text(
+                  widget.title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
                 const SizedBox(height: 8),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(10),
@@ -125,7 +152,13 @@ class _TrackingCardState extends State<TrackingCard> {
               SizedBox(
                 width: 30,
                 child: Center(
-                  child: Text("$_value", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  child: Text(
+                    "$_value",
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
                 ),
               ),
               _controlBtn(Icons.add, _increment),

@@ -5,6 +5,7 @@ import 'package:welllog/pages/home_page.dart';
 import 'package:welllog/pages/login_page.dart';
 import 'package:welllog/pages/register_page.dart';
 import 'package:welllog/providers/auth_provider.dart';
+import 'package:welllog/pages/about_page.dart';
 import 'firebase_options.dart'; // flutterfire ile oluşturduysan
 
 void main() async {
@@ -29,6 +30,7 @@ class MyApp extends StatelessWidget {
         "/login": (context) => LoginPage(),
         "/register": (context) => RegisterPage(),
         "/home": (context) => HomePage(),
+        "/about": (context) => const AboutPage(),
       },
       home: LoginPage(),
       /*Scaffold(
