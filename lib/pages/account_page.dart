@@ -75,20 +75,13 @@ class AccountPage extends StatelessWidget {
             _settingsTile(
               icon: Icons.person_outline,
               text: "Profil Bilgilerim",
-              onTap: () => Navigator.pushNamed(context, "/editProfile"),
+              onTap: () => Navigator.pushNamed(context, "/edit_profile"),
             ),
 
             _settingsTile(
               icon: Icons.lock_outline,
-              text: "Şifre Sıfırla",
-              onTap: () {
-                auth.sendResetEmail();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text("Şifre sıfırlama maili gönderildi"),
-                  ),
-                );
-              },
+              text: "Şifre Değiştir",
+              onTap: () => Navigator.pushNamed(context, "/change_password"),
             ),
 
             _settingsTile(

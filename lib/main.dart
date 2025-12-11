@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'package:welllog/pages/change_password.dart';
+import 'package:welllog/pages/edit_profile_page.dart';
 import 'package:welllog/pages/home_page.dart';
 import 'package:welllog/pages/login_page.dart';
 import 'package:welllog/pages/register_page.dart';
 import 'package:welllog/providers/auth_provider.dart';
-<<<<<<< HEAD
 import 'package:welllog/pages/about_page.dart';
-import 'firebase_options.dart'; // flutterfire ile oluşturduysan
-=======
 import 'firebase_options.dart';
->>>>>>> 516a9ef5597768fce4148f4fe0fd8aa90380e1e3
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,9 +18,7 @@ void main() async {
     MultiProvider(
       providers: [
         // AuthProvider başlatılırken autoLogin() çağrılıyor.
-        ChangeNotifierProvider(
-          create: (_) => AuthProvider()..autoLogin(),
-        )
+        ChangeNotifierProvider(create: (_) => AuthProvider()..autoLogin()),
       ],
       child: const MyApp(),
     ),
@@ -40,17 +36,12 @@ class MyApp extends StatelessWidget {
 
       // Routes (Rotasyonlar)
       routes: {
-<<<<<<< HEAD
         "/login": (context) => LoginPage(),
         "/register": (context) => RegisterPage(),
         "/home": (context) => HomePage(),
         "/about": (context) => const AboutPage(),
-=======
-        // Tutarlılık için const ekledik
-        "/login": (context) =>  LoginPage(),
-        "/register": (context) =>  RegisterPage(),
-        "/home": (context) =>  HomePage(),
->>>>>>> 516a9ef5597768fce4148f4fe0fd8aa90380e1e3
+        "/edit_profile": (context) => const EditProfilePage(),
+        "/change_password": (context) => const PasswordChangePage(),
       },
 
       // Ana Sayfa (Dinamik Yönlendirme)
