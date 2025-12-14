@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
-import 'package:http/http.dart' as http; // http paketini ekledik
+import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-// NOT: pubspec.yaml dosyanıza http paketini eklemeyi unutmayın!
-// dependencies:
-//   flutter:
-//     sdk: flutter
-//   http: ^1.1.0 // veya en güncel sürüm
+import 'package:welllog/providers/todo_provider.dart';
+import 'package:welllog/providers/auth_provider.dart';
 
 class ScorePage extends StatefulWidget {
   const ScorePage({super.key});
@@ -16,10 +15,8 @@ class ScorePage extends StatefulWidget {
 }
 
 class _ScorePageState extends State<ScorePage> {
-  final double efficiencyScore = 0.75;
   final TextEditingController _noteController = TextEditingController();
 
-  // Alıntıyı saklamak için değişkenler
   String _dailyQuote = "Yükleniyor...";
   String _quoteAuthor = "";
   bool _isLoadingQuote = true;
@@ -27,82 +24,108 @@ class _ScorePageState extends State<ScorePage> {
   @override
   void initState() {
     super.initState();
-    // Sayfa yüklendiğinde alıntıyı çek
     _fetchDailyQuote();
   }
 
-  // ZenQuotes API'den alıntı çekme fonksiyonu
+  // 🌿 Günlük alıntı
   Future<void> _fetchDailyQuote() async {
-    // API adresi: https://zenquotes.io/api/random
     final uri = Uri.parse('https://zenquotes.io/api/random');
 
     try {
       final response = await http.get(uri);
-
       if (response.statusCode == 200) {
-        // API'den gelen JSON verisini çözümle
-        final List<dynamic> data = json.decode(response.body);
-
-        if (data.isNotEmpty && data[0] is Map) {
-          setState(() {
-            // 'q' alıntıyı, 'a' yazarı temsil eder
-            _dailyQuote = data[0]['q'] ?? "Alıntı bulunamadı.";
-            _quoteAuthor = data[0]['a'] ?? "Bilinmeyen Yazar";
-            _isLoadingQuote = false;
-          });
-        }
-      } else {
-        // Hata durumunda (örneğin 404)
+        final List data = json.decode(response.body);
         setState(() {
-          _dailyQuote = "Alıntı yüklenirken bir sorun oluştu.";
-          _quoteAuthor = "";
+          _dailyQuote = data[0]['q'] ?? "Alıntı bulunamadı.";
+          _quoteAuthor = data[0]['a'] ?? "";
           _isLoadingQuote = false;
         });
+      } else {
+        _setQuoteError();
       }
-    } catch (e) {
-      // Ağ hatası veya JSON çözümleme hatası
-      setState(() {
-        _dailyQuote = "Ağ hatası: Alıntı yüklenemedi.";
-        _quoteAuthor = "";
-        _isLoadingQuote = false;
-      });
-      print('Alıntı çekme hatası: $e');
+    } catch (_) {
+      _setQuoteError();
     }
+  }
+
+  void _setQuoteError() {
+    setState(() {
+      _dailyQuote = "Alıntı yüklenemedi.";
+      _quoteAuthor = "";
+      _isLoadingQuote = false;
+    });
+  }
+
+  // 📝 Not kaydet (reset YOK)
+  void _saveNote(BuildContext context) {
+    if (_noteController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Lütfen bir not gir")),
+      );
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Not başarıyla kaydedildi ✅")),
+    );
+
+    _noteController.clear();
   }
 
   @override
   Widget build(BuildContext context) {
+    final todo = context.watch<TodoProvider>();
+    final auth = context.watch<AuthProvider>();
+
+    final fullName =
+        auth.currentUserData?["fullName"]?.split(" ").first ?? "Kullanıcı";
+
+    // 🎯 Score artık Provider’dan geliyor
+    final double efficiencyScore = todo.calculateScore();
+    final int percentage = (efficiencyScore * 100).round();
+
     return Scaffold(
       backgroundColor: Colors.white,
+
+      // ✅ STANDARD APPBAR
+      appBar: AppBar(
+        backgroundColor: Colors.green.shade600,
+        elevation: 0,
+        title: Text(
+          "$fullName'nın Günlük Özeti",
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            const SizedBox(height: 20),
-            const Text(
-              "Günün Özeti",
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 30),
+
+            // 🟢 SAYDAM & KALIN YÜZDELİK ÇEMBER
             Stack(
               alignment: Alignment.center,
               children: [
                 SizedBox(
-                  width: 200,
-                  height: 200,
+                  width: 220,
+                  height: 220,
                   child: CircularProgressIndicator(
-                    value: efficiencyScore,
-                    strokeWidth: 15,
-                    backgroundColor: Colors.grey.shade200,
-                    color: Colors.green,
+                    value: efficiencyScore.clamp(0, 1),
+                    strokeWidth: 38,
+                    backgroundColor: Colors.green.withOpacity(0.15),
+                    color: Colors.green.withOpacity(0.55),
                   ),
                 ),
                 Column(
                   children: [
                     Text(
-                      "%${(efficiencyScore * 100).toInt()}",
+                      "%$percentage",
                       style: const TextStyle(
-                        fontSize: 40,
+                        fontSize: 44,
                         fontWeight: FontWeight.bold,
                         color: Colors.green,
                       ),
@@ -115,67 +138,64 @@ class _ScorePageState extends State<ScorePage> {
                 ),
               ],
             ),
-            const SizedBox(height: 30),
-            // Burası eski Text widget'ının yeri:
-            // Text(
-            //   efficiencyScore >= 0.7
-            //       ? "Harika bir gün! 🚀"
-            //       : "Yarın daha iyisini yapabilirsin! ✨",
-            //   style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-            // ),
 
-            // YENİ: Alıntı Bölümü
+            const SizedBox(height: 20),
+
+            Text(
+              percentage >= 80
+                  ? "Mükemmel bir gün! 🔥"
+                  : percentage >= 60
+                      ? "Gayet iyi gidiyorsun 👍"
+                      : "Yarın daha iyi olacak 💪",
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+
+            const SizedBox(height: 30),
+
+            // 💬 GÜNLÜK ALINTI
             Container(
               padding: const EdgeInsets.all(16),
-              margin: const EdgeInsets.symmetric(vertical: 10),
               decoration: BoxDecoration(
                 color: Colors.green.shade50,
                 borderRadius: BorderRadius.circular(15),
               ),
               child: _isLoadingQuote
-                  ? const Center(child: CircularProgressIndicator(color: Colors.green))
+                  ? const CircularProgressIndicator(color: Colors.green)
                   : Column(
-                children: [
-                  const Icon(Icons.format_quote, color: Colors.green, size: 30),
-                  const SizedBox(height: 10),
-                  Text(
-                    _dailyQuote,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontStyle: FontStyle.italic,
-                      color: Colors.green.shade800,
-                    ),
-                  ),
-                  if (_quoteAuthor.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8.0),
-                      child: Text(
-                        "- $_quoteAuthor",
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green,
+                      children: [
+                        const Icon(Icons.format_quote,
+                            color: Colors.green, size: 30),
+                        const SizedBox(height: 10),
+                        Text(
+                          _dailyQuote,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontStyle: FontStyle.italic,
+                            color: Colors.green.shade800,
+                          ),
                         ),
-                      ),
+                        if (_quoteAuthor.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text(
+                              "- $_quoteAuthor",
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.green,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
-                ],
-              ),
             ),
 
-            // Burası eski Padding/Text widget'ının yeri:
-            // const Padding(
-            //   padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 20),
-            //   child: Text(
-            //     "Bugünkü hedeflerinin çoğuna ulaştın. Kendinle gurur duy!",
-            //     textAlign: TextAlign.center,
-            //     style: TextStyle(color: Colors.grey),
-            //   ),
-            // ),
+            const SizedBox(height: 30),
 
-            const SizedBox(height: 20), // Ekstra boşluk eklendi
-
-            // Mevcut Not Bölümü devam ediyor...
+            // 📝 NOT ALANI
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -200,32 +220,35 @@ class _ScorePageState extends State<ScorePage> {
                   TextField(
                     controller: _noteController,
                     maxLines: 3,
-                    decoration: InputDecoration(
-                      hintText: "Bugün neler hissettin? Buraya yazabilirsin...",
+                    decoration: const InputDecoration(
+                      hintText:
+                          "Bugün neler hissettin? Buraya yazabilirsin...",
                       border: InputBorder.none,
-                      hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
                     ),
                   ),
                 ],
               ),
             ),
+
             const SizedBox(height: 30),
+
+            // ✅ NOTU KAYDET
             ElevatedButton(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Günün kaydedildi! 🎉")),
-                );
-              },
+              onPressed: () => _saveNote(context),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
-                minimumSize: const Size(double.infinity, 50),
+                minimumSize: const Size(double.infinity, 52),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(15),
                 ),
               ),
               child: const Text(
-                "Günü Tamamla",
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                "Notu Kaydet",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
               ),
             ),
           ],

@@ -1,185 +1,238 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../providers/todo_provider.dart';
 import 'package:welllog/providers/auth_provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-class TodoPage extends StatefulWidget {
+
+class TodoPage extends StatelessWidget {
   const TodoPage({super.key});
 
-  @override
-  State<TodoPage> createState() => _TodoPageState();
-}
+@override
+Widget build(BuildContext context) {
+  final todo = context.watch<TodoProvider>();
+  final auth = context.watch<AuthProvider>();
 
-class _TodoPageState extends State<TodoPage> {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Üst Başlık Kısmı - Kullanıcı bilgileri çıkarıldı
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Row(
-                children: [
-                  Icon(Icons.home, color: Colors.green, size: 30),
-                  SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "TodoPage",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                      Text(
-                        "Günlük Takip",
-                        style: TextStyle(color: Colors.grey, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+  final fullName =
+      auth.currentUserData?["fullName"]?.split(" ").first ?? "Kullanıcı";
+
+  return Scaffold(
+    backgroundColor: Colors.white,
+
+    appBar: AppBar(
+      backgroundColor: Colors.green.shade600,
+      elevation: 0,
+      title: Text(
+        "$fullName'nın Yapılacak Listesi",
+        style: GoogleFonts.poppins(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    ),
+
+    body: SafeArea(
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // 👇 SENİN MEVCUT CARD'LARIN AYNEN DEVAM
+
+            // Ruh Hali Takibi
+            _emojiCard(
+              context,
+              title: "Ruh Hali Takibi",
+              selected: todo.ruhHali,
+              onSelect: (val) => todo.setRuhHali(val),
             ),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                children: const [
-                  TrackingCard(
-                    title: "Ruh Hali Takibi",
-                    icon: Icons.sentiment_satisfied_alt,
-                  ),
-                  TrackingCard(title: "Sigara Takibi", icon: Icons.smoke_free),
-                  TrackingCard(title: "Kahve Takibi", icon: Icons.coffee),
-                  TrackingCard(
-                    title: "Cilt Bakımı Takibi",
-                    icon: Icons.face_retouching_natural,
-                  ),
-                  TrackingCard(
-                    title: "Ekran Süresi Takibi",
-                    icon: Icons.smartphone,
-                  ),
-                  TrackingCard(title: "Öğün Takibi", icon: Icons.restaurant),
-                  TrackingCard(
-                    title: "Adım Takibi",
-                    icon: Icons.directions_walk,
-                  ),
-                  TrackingCard(title: "Uyku Takibi", icon: Icons.bedtime),
-                  TrackingCard(title: "Su İçme Takibi", icon: Icons.water_drop),
-                  SizedBox(height: 20),
-                ],
-              ),
+
+            // Sigara Takibi
+            _sliderCard(
+              context,
+              title: "Sigara Takibi",
+              value: todo.sigara.toDouble(),
+              max: 10,
+              onChanged: (val) => todo.setSigara(val.toInt()),
+              unit: "adet",
+            ),
+
+            // Kahve Takibi
+            _sliderCard(
+              context,
+              title: "Kahve Takibi",
+              value: todo.kahve.toDouble(),
+              max: 5,
+              onChanged: (val) => todo.setKahve(val.toInt()),
+              unit: "bardak",
+            ),
+
+            // Cilt Bakımı Takibi
+            _checkboxCard(
+              context,
+              title: "Cilt Bakımı Takibi",
+              value: todo.ciltBakimi,
+              onChanged: (val) => todo.setCiltBakimi(val!),
+            ),
+
+            // Ekran Süresi Takibi
+            _sliderCard(
+              context,
+              title: "Ekran Süresi Takibi",
+              value: todo.ekranSuresi,
+              max: 10,
+              onChanged: (val) => todo.setEkran(val),
+              unit: "saat",
+            ),
+
+            // Öğün Takibi
+            _multiCheckboxCard(
+              context,
+              title: "Öğün Takibi",
+              labels: ["Kahvaltı", "Öğle", "Akşam"],
+              values: todo.ogunler,
+              onChanged: (index) => todo.toggleOgun(index),
+            ),
+
+            // Adım Takibi
+            _sliderCard(
+              context,
+              title: "Adım Takibi",
+              value: todo.adim.toDouble(),
+              max: 10000,
+              onChanged: (val) => todo.setAdim(val.toInt()),
+              unit: "adım",
+            ),
+
+            // Uyku Takibi
+            _sliderCard(
+              context,
+              title: "Uyku Takibi",
+              value: todo.uyku,
+              max: 12,
+              onChanged: (val) => todo.setUyku(val),
+              unit: "saat",
+            ),
+
+            // Su İçme Takibi
+            _sliderCard(
+              context,
+              title: "Su İçme Takibi",
+              value: todo.su.toDouble(),
+              max: 10,
+              onChanged: (val) => todo.setSu(val.toInt()),
+              unit: "bardak",
             ),
           ],
         ),
       ),
     );
   }
-}
 
-class TrackingCard extends StatefulWidget {
-  final String title;
-  final IconData icon;
-
-  const TrackingCard({super.key, required this.title, required this.icon});
-
-  @override
-  State<TrackingCard> createState() => _TrackingCardState();
-}
-
-class _TrackingCardState extends State<TrackingCard> {
-  int _value = 5;
-
-  void _increment() {
-    if (_value < 10) setState(() => _value++);
-  }
-
-  void _decrement() {
-    if (_value > 1) setState(() => _value--);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(widget.icon, color: Colors.green.shade700, size: 24),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: LinearProgressIndicator(
-                    value: _value / 10.0,
-                    backgroundColor: Colors.grey.shade200,
-                    color: Colors.green,
-                    minHeight: 6,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 15),
-          Row(
-            children: [
-              _controlBtn(Icons.remove, _decrement),
-              SizedBox(
-                width: 30,
-                child: Center(
+  Widget _emojiCard(BuildContext context,
+      {required String title,
+      required int selected,
+      required Function(int) onSelect}) {
+    final emojis = ["😢", "😟", "😐", "🙂", "😄"];
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: List.generate(
+                emojis.length,
+                (index) => GestureDetector(
+                  onTap: () => onSelect(index + 1),
                   child: Text(
-                    "$_value",
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+                    emojis[index],
+                    style: TextStyle(
+                        fontSize: 32,
+                        backgroundColor:
+                            selected == index + 1 ? Colors.green[100] : null),
                   ),
                 ),
               ),
-              _controlBtn(Icons.add, _increment),
-            ],
-          ),
-        ],
+            )
+          ],
+        ),
       ),
     );
   }
 
-  Widget _controlBtn(IconData icon, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.green),
-          shape: BoxShape.circle,
+  Widget _sliderCard(BuildContext context,
+      {required String title,
+      required double value,
+      required double max,
+      required Function(double) onChanged,
+      String? unit}) {
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: Slider(
+                    value: value,
+                    max: max,
+                    divisions: max.toInt(),
+                    label: "$value ${unit ?? ''}",
+                    onChanged: onChanged,
+                  ),
+                ),
+                Text("${value.toInt()} ${unit ?? ''}"),
+              ],
+            ),
+          ],
         ),
-        child: Icon(icon, color: Colors.green, size: 18),
+      ),
+    );
+  }
+
+  Widget _checkboxCard(BuildContext context,
+      {required String title, required bool value, required Function(bool?) onChanged}) {
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: CheckboxListTile(
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        value: value,
+        onChanged: onChanged,
+      ),
+    );
+  }
+
+  Widget _multiCheckboxCard(BuildContext context,
+      {required String title,
+      required List<String> labels,
+      required List<bool> values,
+      required Function(int) onChanged}) {
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+            ...List.generate(labels.length, (index) {
+              return CheckboxListTile(
+                title: Text(labels[index]),
+                value: values[index],
+                onChanged: (_) => onChanged(index),
+              );
+            }),
+          ],
+        ),
       ),
     );
   }

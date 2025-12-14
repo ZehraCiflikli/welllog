@@ -9,6 +9,8 @@ import 'package:welllog/pages/register_page.dart';
 import 'package:welllog/providers/auth_provider.dart';
 import 'package:welllog/pages/about_page.dart';
 import 'firebase_options.dart';
+import 'package:welllog/providers/todo_provider.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,6 +21,9 @@ void main() async {
       providers: [
         // AuthProvider başlatılırken autoLogin() çağrılıyor.
         ChangeNotifierProvider(create: (_) => AuthProvider()..autoLogin()),
+       ChangeNotifierProvider(
+        create: (_) => TodoProvider(),
+      ),
       ],
       child: const MyApp(),
     ),
