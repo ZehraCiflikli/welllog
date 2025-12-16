@@ -1,103 +1,184 @@
 import 'package:flutter/material.dart';
 
 class TodoProvider with ChangeNotifier {
+  // ================== GÜN RESET ==================
   DateTime _lastResetDate =
       DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
 
-  int ruhHali = 0;        // 1–5
-  int sigara = 0;         // adet
-  int kahve = 0;          // 0–5
-  double ekranSuresi = 0; // saat
-  int adim = 0;           // adım
-  int su = 0;             // bardak
-  bool ciltBakimi = false;
-  List<bool> ogunler = [false, false, false];
-  double uyku = 0;        // saat
+  bool _didResetToday = false;
 
-  void checkDailyReset() {
-    final today = DateTime.now();
-    final nowDay = DateTime(today.year, today.month, today.day);
-    if (nowDay.isAfter(_lastResetDate)) {
+  void _checkDailyReset() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    if (today.isAfter(_lastResetDate)) {
       _resetAll();
-      _lastResetDate = nowDay;
+      _lastResetDate = today;
+      _didResetToday = true;
     }
   }
 
+  bool consumeResetFlag() {
+    if (_didResetToday) {
+      _didResetToday = false;
+      return true;
+    }
+    return false;
+  }
+
+  // ================== RESET ==================
   void _resetAll() {
     ruhHali = 0;
-    sigara = 0;
-    kahve = 0;
-    ekranSuresi = 0;
+    sigara = -1;
+    kahve = -1;
+
+    ekranSuresi = -1;
     adim = 0;
     su = 0;
+
     ciltBakimi = false;
     ogunler = [false, false, false];
-    uyku = 0;
+
+    uyku = -1;
+
     notifyListeners();
   }
 
-  // ================= SETTER =================
-  void setRuhHali(int v) { checkDailyReset(); ruhHali = v; notifyListeners(); }
-  void setSigara(int v) { checkDailyReset(); sigara = v; notifyListeners(); }
-  void setKahve(int v) { checkDailyReset(); kahve = v; notifyListeners(); }
-  void setEkran(double v) { checkDailyReset(); ekranSuresi = v; notifyListeners(); }
-  void setAdim(int v) { checkDailyReset(); adim = v; notifyListeners(); }
-  void setSu(int v) { checkDailyReset(); su = v; notifyListeners(); }
-  void setCiltBakimi(bool v) { checkDailyReset(); ciltBakimi = v; notifyListeners(); }
-  void toggleOgun(int i) { checkDailyReset(); ogunler[i] = !ogunler[i]; notifyListeners(); }
-  void setUyku(double v) { checkDailyReset(); uyku = v; notifyListeners(); }
+  // ================== GÜNLÜK VERİLER ==================
+  int ruhHali = 0;
+  int sigara = -1;
+  int kahve = -1;
 
-  // ================= PUAN HESABI =================
+  double ekranSuresi = -1;
+  int adim = 0;
+  int su = 0;
 
-  double calculateScore() {
-    checkDailyReset();
+  bool ciltBakimi = false;
+  List<bool> ogunler = [false, false, false];
 
-    final bool hasAnyInput =
-        ruhHali > 0 ||
-        sigara > 0 ||
-        kahve > 0 ||
-        ekranSuresi > 0 ||
-        adim > 0 ||
-        su > 0 ||
-        uyku > 0 ||
-        ciltBakimi ||
-        ogunler.any((e) => e);
+  double uyku = -1;
 
-    if (!hasAnyInput) return 0;
+  // ================== SETTER'LAR ==================
+  void setRuhHali(int value) {
+    _checkDailyReset();
+    ruhHali = value;
+    notifyListeners();
+  }
 
-    double score = 0;
+  void setSigara(int value) {
+    _checkDailyReset();
+    sigara = value;
+    notifyListeners();
+  }
 
-    // 😊 Ruh Hali (max 10)
-    score += (ruhHali.clamp(0, 5)) * 2;
+  void setKahve(int value) {
+    _checkDailyReset();
+    kahve = value;
+    notifyListeners();
+  }
 
-    // 🚬 Sigara (max 10)
-    score += (10 - (sigara * 2)).clamp(0, 10);
+  void setEkranSuresi(double value) {
+    _checkDailyReset();
+    ekranSuresi = value;
+    notifyListeners();
+  }
 
-    // ☕ Kahve (max 10)
-    score += (10 - ((kahve - 1).clamp(0, 4) * 2)).clamp(0, 10);
+  void setAdim(int value) {
+    _checkDailyReset();
+    adim = value;
+    notifyListeners();
+  }
 
-    // 🧴 Cilt Bakımı
-    if (ciltBakimi) score += 10;
+  void setSu(int value) {
+    _checkDailyReset();
+    su = value;
+    notifyListeners();
+  }
 
-    // 📱 Ekran Süresi (1 saat = 10)
-    score += (10 - (ekranSuresi - 1).clamp(0, 10)).clamp(0, 10);
+  void toggleCiltBakimi(bool value) {
+    _checkDailyReset();
+    ciltBakimi = value;
+    notifyListeners();
+  }
 
-    // 🍽️ Öğün (3×5)
-    score += ogunler.where((e) => e).length * 5;
+  void toggleOgun(int index) {
+    _checkDailyReset();
+    ogunler[index] = !ogunler[index];
+    notifyListeners();
+  }
 
-    // 🚶 Adım (1000 = 1)
-    score += (adim / 1000).floor().clamp(0, 10);
+  void setUyku(double value) {
+    _checkDailyReset();
+    uyku = value;
+    notifyListeners();
+  }
 
-    // 😴 Uyku
-    if (uyku >= 8) {
-      score += 15;
-    } else if (uyku >= 4) {
-      score += (15 - ((8 - uyku) * 3)).clamp(0, 15);
+  // ================== PUANLAMA ==================
+  double get maxScore => 100;
+
+  double get totalScore {
+    _checkDailyReset();
+    double earned = 0;
+
+    // 😊 Ruh Hali (10 puan)
+    if (ruhHali > 0) earned += (ruhHali / 5) * 10;
+
+    // 🚬 Sigara (10 puan)
+    if (sigara >= 0) {
+      if (sigara == 0) earned += 10;
+      else if (sigara <= 5) earned += (10 - sigara * 2);
     }
 
-    // 💧 Su
-    score += su.clamp(0, 10);
+    // ☕ Kahve (10 puan)
+    if (kahve >= 0) {
+      if (kahve <= 1) earned += 10;
+      else if (kahve <= 5) earned += (10 - (kahve - 1) * 2);
+    }
 
-    return (score / 100).clamp(0, 1);
+    // 🧴 Cilt Bakımı (10 puan)
+    if (ciltBakimi) earned += 10;
+
+    // 📱 Ekran Süresi (10 puan)
+    if (ekranSuresi >= 0) {
+      earned += (10 - (ekranSuresi - 1)).clamp(0, 10);
+    }
+
+    // 🍽️ Öğünler (max 15)
+    earned += ogunler.where((e) => e).length * 5;
+
+    // 🚶 Adım (10 puan)
+    earned += (adim / 1000).clamp(0, 10);
+
+    // 😴 Uyku (15 puan)
+    if (uyku >= 0) {
+      if (uyku >= 8) earned += 15;
+      else if (uyku >= 4) earned += 15 - (8 - uyku) * 3;
+    }
+
+    // 💧 Su (10 puan)
+    earned += su.clamp(0, 10);
+
+    return earned.clamp(0, maxScore);
+  }
+
+  // ================== SCORE YARDIMCILAR ==================
+  double calculateScore() => (totalScore / maxScore).clamp(0, 1);
+
+  double calculatePercentage() =>
+      ((totalScore / maxScore) * 100).clamp(0, 100);
+
+  // ================== FIRESTORE KAYIT ==================
+  Map<String, dynamic> toMap() {
+    return {
+      "ruhHali": ruhHali,
+      "sigara": sigara,
+      "kahve": kahve,
+      "ekranSuresi": ekranSuresi,
+      "adim": adim,
+      "su": su,
+      "ciltBakimi": ciltBakimi,
+      "ogunler": ogunler,
+      "uyku": uyku,
+    };
   }
 }
