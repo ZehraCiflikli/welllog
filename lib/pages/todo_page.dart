@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-
 import '../providers/todo_provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/firestore_service.dart';
@@ -92,6 +91,34 @@ class _TodoPageState extends State<TodoPage> {
           if (!isToday) _oldDayBanner(),
 
           _buildForm(todo, enabled: !todo.isReadOnly),
+          if (!isToday)
+            Card(
+              margin: const EdgeInsets.only(top: 16),
+              color: Colors.green.shade50,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "Bu güne ait toplam skor",
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
+                    ),
+                    Text(
+                      "${todo.totalScore.round()} / ${todo.maxScore.toInt()}",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: Colors.green.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -109,30 +136,48 @@ class _TodoPageState extends State<TodoPage> {
     final formatterDay = DateFormat("E", "tr");
 
     DateTime now = DateTime.now();
-    bool canGoForward =
-        selectedDate.year == now.year &&
-        selectedDate.month == now.month &&
-        selectedDate.day == now.day;
+
+    bool isSameDay(DateTime a, DateTime b) =>
+        a.year == b.year && a.month == b.month && a.day == b.day;
 
     Widget buildDay(DateTime date, bool isSelected, bool disabled) {
       return GestureDetector(
         onTap: disabled
             ? null
             : () async {
+                final uid = auth.currentUserData?["uid"];
+                if (uid == null) return;
+
+                final bool tappedIsToday = isSameDay(date, now);
+
                 setState(() {
                   selectedDate = date;
                 });
 
-                final uid = auth.currentUserData?["uid"];
-                if (uid == null) return;
+                final todo = context.read<TodoProvider>();
 
-                if (!isToday) {
-                  final data = await _firestoreService.getDailyLog(
-                    uid: uid,
-                    date: date,
-                  );
-                  context.read<TodoProvider>().loadFromMap(data);
+                if (tappedIsToday) {
+                  // 👉 Bugün → editable, provider kendi state’inde kalır
+                  todo.isReadOnly = false;
+                  return;
                 }
+
+                // 👉 Geçmiş gün → Firestore’dan çek
+                final data = await _firestoreService.getDailyLog(
+                  uid: uid,
+                  date: date,
+                );
+
+                // 🔥 EN KRİTİK SATIR
+                todo.loadFromMap(data);
+
+                // 🔥 CONTROLLER’LARI DA GÜNCELLE
+                _sigaraController.text = todo.sigara >= 0
+                    ? todo.sigara.toString()
+                    : "";
+                _kahveController.text = todo.kahve >= 0
+                    ? todo.kahve.toString()
+                    : "";
               },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
@@ -167,12 +212,18 @@ class _TodoPageState extends State<TodoPage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Expanded(child: buildDay(yesterday, yesterday == selectedDate, false)),
+        Expanded(
+          child: buildDay(yesterday, isSameDay(yesterday, selectedDate), false),
+        ),
         const SizedBox(width: 8),
         Expanded(child: buildDay(selectedDate, true, false)),
         const SizedBox(width: 8),
         Expanded(
-          child: buildDay(tomorrow, tomorrow == selectedDate, canGoForward),
+          child: buildDay(
+            tomorrow,
+            isSameDay(tomorrow, selectedDate),
+            isSameDay(selectedDate, now),
+          ),
         ),
       ],
     );
