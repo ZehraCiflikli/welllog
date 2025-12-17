@@ -53,4 +53,24 @@ class FirestoreService {
     final local = date.toLocal(); // 👈 Türkiye saatine çeker
     return "${local.year}-${local.month.toString().padLeft(2, '0')}-${local.day.toString().padLeft(2, '0')}";
   }
+
+  Future<Map<String, dynamic>?> getDailyLog({
+    required String uid,
+    required DateTime date,
+  }) async {
+    final docId = _formatDate(date);
+
+    try {
+      final doc = await _db
+          .collection("users")
+          .doc(uid)
+          .collection("daily_logs")
+          .doc(docId)
+          .get();
+
+      return doc.data();
+    } catch (e) {
+      return null;
+    }
+  }
 }

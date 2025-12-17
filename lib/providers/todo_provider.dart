@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 
 class TodoProvider with ChangeNotifier {
+  // ================== READONLY ==================
+  bool isReadOnly = false;
+
   // ================== GÜN RESET ==================
-  DateTime _lastResetDate =
-      DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+  DateTime _lastResetDate = DateTime(
+    DateTime.now().year,
+    DateTime.now().month,
+    DateTime.now().day,
+  );
 
   bool _didResetToday = false;
 
@@ -16,6 +22,9 @@ class TodoProvider with ChangeNotifier {
       _lastResetDate = today;
       _didResetToday = true;
     }
+
+    // 👉 Bugüne dönünce readonly kapalı olmalı
+    isReadOnly = false;
   }
 
   bool consumeResetFlag() {
@@ -120,54 +129,44 @@ class TodoProvider with ChangeNotifier {
     _checkDailyReset();
     double earned = 0;
 
-    // 😊 Ruh Hali (10 puan)
     if (ruhHali > 0) earned += (ruhHali / 5) * 10;
 
-    // 🚬 Sigara (10 puan)
     if (sigara >= 0) {
-      if (sigara == 0) earned += 10;
-      else if (sigara <= 5) earned += (10 - sigara * 2);
+      if (sigara == 0)
+        earned += 10;
+      else if (sigara <= 5)
+        earned += (10 - sigara * 2);
     }
 
-    // ☕ Kahve (10 puan)
     if (kahve >= 0) {
-      if (kahve <= 1) earned += 10;
-      else if (kahve <= 5) earned += (10 - (kahve - 1) * 2);
+      if (kahve <= 1)
+        earned += 10;
+      else if (kahve <= 5)
+        earned += (10 - (kahve - 1) * 2);
     }
 
-    // 🧴 Cilt Bakımı (10 puan)
     if (ciltBakimi) earned += 10;
 
-    // 📱 Ekran Süresi (10 puan)
     if (ekranSuresi >= 0) {
       earned += (10 - (ekranSuresi - 1)).clamp(0, 10);
     }
 
-    // 🍽️ Öğünler (max 15)
     earned += ogunler.where((e) => e).length * 5;
-
-    // 🚶 Adım (10 puan)
     earned += (adim / 1000).clamp(0, 10);
 
-    // 😴 Uyku (15 puan)
     if (uyku >= 0) {
-      if (uyku >= 8) earned += 15;
-      else if (uyku >= 4) earned += 15 - (8 - uyku) * 3;
+      if (uyku >= 8)
+        earned += 15;
+      else if (uyku >= 4)
+        earned += 15 - (8 - uyku) * 3;
     }
 
-    // 💧 Su (10 puan)
     earned += su.clamp(0, 10);
 
     return earned.clamp(0, maxScore);
   }
 
-  // ================== SCORE YARDIMCILAR ==================
-  double calculateScore() => (totalScore / maxScore).clamp(0, 1);
-
-  double calculatePercentage() =>
-      ((totalScore / maxScore) * 100).clamp(0, 100);
-
-  // ================== FIRESTORE KAYIT ==================
+  // ================== FIRESTORE ==================
   Map<String, dynamic> toMap() {
     return {
       "ruhHali": ruhHali,
@@ -180,5 +179,33 @@ class TodoProvider with ChangeNotifier {
       "ogunler": ogunler,
       "uyku": uyku,
     };
+  }
+
+  void loadFromMap(Map<String, dynamic>? data) {
+    if (data == null) {
+      _resetAll();
+      isReadOnly = true;
+      notifyListeners();
+      return;
+    }
+
+    final todo = data["todoData"] as Map<String, dynamic>;
+
+    ruhHali = todo["ruhHali"] ?? 0;
+    sigara = todo["sigara"] ?? -1;
+    kahve = todo["kahve"] ?? -1;
+    ekranSuresi = (todo["ekranSuresi"] ?? -1).toDouble();
+    adim = todo["adim"] ?? 0;
+    su = todo["su"] ?? 0;
+    ciltBakimi = todo["ciltBakimi"] ?? false;
+    ogunler = List<bool>.from(todo["ogunler"] ?? [false, false, false]);
+    uyku = (todo["uyku"] ?? -1).toDouble();
+
+    isReadOnly = true;
+    notifyListeners();
+  }
+
+  double calculateScore() {
+    return (totalScore / maxScore).clamp(0, 1);
   }
 }

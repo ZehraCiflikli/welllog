@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../providers/todo_provider.dart';
 import '../providers/auth_provider.dart';
+import '../services/firestore_service.dart';
 
 class TodoPage extends StatefulWidget {
   const TodoPage({super.key});
@@ -16,8 +17,9 @@ class TodoPage extends StatefulWidget {
 class _TodoPageState extends State<TodoPage> {
   late TextEditingController _sigaraController;
   late TextEditingController _kahveController;
+  final FirestoreService _firestoreService = FirestoreService();
 
-  DateTime selectedDate = DateTime.now(); // 🔥 Tarih seçici için state
+  DateTime selectedDate = DateTime.now();
 
   @override
   void initState() {
@@ -51,9 +53,17 @@ class _TodoPageState extends State<TodoPage> {
     final todo = context.watch<TodoProvider>();
     final auth = context.watch<AuthProvider>();
 
+    // Gün reset olduysa inputları temizle
     if (todo.consumeResetFlag()) {
-      _sigaraController.clear();
-      _kahveController.clear();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _sigaraController.clear();
+        _kahveController.clear();
+      });
+    }
+
+    // Bugüne dönünce readonly kapansın
+    if (isToday && todo.isReadOnly) {
+      todo.isReadOnly = false;
     }
 
     final name =
@@ -72,27 +82,26 @@ class _TodoPageState extends State<TodoPage> {
           ),
         ),
       ),
-
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _threeDayHeader(),
+          _threeDayHeader(auth),
 
           const SizedBox(height: 10),
 
           if (!isToday) _oldDayBanner(),
 
-          _buildForm(todo, enabled: isToday),
+          _buildForm(todo, enabled: !todo.isReadOnly),
         ],
       ),
     );
   }
 
   // ============================================================
-  //  🔥 3 GÜNLÜK HEADER (sol – bugün – sağ)
+  // 🔥 3 GÜNLÜK HEADER
   // ============================================================
 
-  Widget _threeDayHeader() {
+  Widget _threeDayHeader(AuthProvider auth) {
     DateTime yesterday = selectedDate.subtract(const Duration(days: 1));
     DateTime tomorrow = selectedDate.add(const Duration(days: 1));
 
@@ -101,18 +110,29 @@ class _TodoPageState extends State<TodoPage> {
 
     DateTime now = DateTime.now();
     bool canGoForward =
-        !(selectedDate.year == now.year &&
-            selectedDate.month == now.month &&
-            selectedDate.day == now.day);
+        selectedDate.year == now.year &&
+        selectedDate.month == now.month &&
+        selectedDate.day == now.day;
 
     Widget buildDay(DateTime date, bool isSelected, bool disabled) {
       return GestureDetector(
         onTap: disabled
             ? null
-            : () {
+            : () async {
                 setState(() {
                   selectedDate = date;
                 });
+
+                final uid = auth.currentUserData?["uid"];
+                if (uid == null) return;
+
+                if (!isToday) {
+                  final data = await _firestoreService.getDailyLog(
+                    uid: uid,
+                    date: date,
+                  );
+                  context.read<TodoProvider>().loadFromMap(data);
+                }
               },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
@@ -152,14 +172,14 @@ class _TodoPageState extends State<TodoPage> {
         Expanded(child: buildDay(selectedDate, true, false)),
         const SizedBox(width: 8),
         Expanded(
-          child: buildDay(tomorrow, tomorrow == selectedDate, !canGoForward),
+          child: buildDay(tomorrow, tomorrow == selectedDate, canGoForward),
         ),
       ],
     );
   }
 
   // ============================================================
-  //  🔶 GEÇMİŞ GÜN UYARISI
+  // 🔶 GEÇMİŞ GÜN BİLGİSİ
   // ============================================================
 
   Widget _oldDayBanner() {
@@ -177,7 +197,7 @@ class _TodoPageState extends State<TodoPage> {
   }
 
   // ============================================================
-  //  🔥 FORM (aktif/pasif)
+  // 🔥 FORM
   // ============================================================
 
   Widget _buildForm(TodoProvider todo, {required bool enabled}) {
@@ -247,6 +267,7 @@ class _TodoPageState extends State<TodoPage> {
                 }),
               ),
             ),
+
             _card(
               "Adım Takibi",
               _slider(
