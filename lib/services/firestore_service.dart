@@ -41,15 +41,16 @@ class FirestoreService {
         .collection("daily_logs")
         .doc(docId)
         .set({
-      "totalScore": totalScore,
-      "efficiency": efficiency,
-      "note": note,
-      "todoData": todoData,
-      "createdAt": FieldValue.serverTimestamp(),
-    });
+          "totalScore": totalScore,
+          "efficiency": efficiency,
+          "note": note,
+          "todoData": todoData,
+          "createdAt": FieldValue.serverTimestamp(),
+        });
   }
 
   String _formatDate(DateTime date) {
-    return "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+    final local = date.toLocal(); // 👈 Türkiye saatine çeker
+    return "${local.year}-${local.month.toString().padLeft(2, '0')}-${local.day.toString().padLeft(2, '0')}";
   }
 }

@@ -23,7 +23,8 @@ class _ScorePageState extends State<ScorePage> {
   String _quoteAuthor = "";
   bool _isLoadingQuote = true;
 
-  bool _savedThisBuild = false; // 👈 bu sayfa açıldığında bir kere kaydetmek için
+  bool _savedThisBuild =
+      false; // 👈 bu sayfa açıldığında bir kere kaydetmek için
 
   @override
   void initState() {
@@ -42,16 +43,11 @@ class _ScorePageState extends State<ScorePage> {
     try {
       await _firestoreService.saveDailyLog(
         uid: uid,
-        date: DateTime.now(),
+        date: DateTime.now().toLocal(),
         totalScore: todo.totalScore.round(),
         efficiency: todo.calculateScore(), // 0–1
         note: _noteController.text.trim(),
         todoData: todo.toMap(),
-      );
-
-      // İstersen snackbar da göstermeyebilirsin, ben bilgi amaçlı bıraktım:
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Günlük kayıt otomatik kaydedildi ✅")),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -104,15 +100,15 @@ class _ScorePageState extends State<ScorePage> {
 
   void _saveNote(BuildContext context) {
     if (_noteController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Lütfen bir not gir")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Lütfen bir not gir")));
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Not başarıyla kaydedildi ✅")),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text("Not başarıyla kaydedildi ✅")));
 
     _noteController.clear();
   }
@@ -130,8 +126,9 @@ class _ScorePageState extends State<ScorePage> {
 
     final double totalScore = todo.totalScore;
     final double maxScore = todo.maxScore;
-    final double efficiencyRatio =
-        maxScore == 0 ? 0 : (totalScore / maxScore).clamp(0, 1);
+    final double efficiencyRatio = maxScore == 0
+        ? 0
+        : (totalScore / maxScore).clamp(0, 1);
 
     final int percentage = (efficiencyRatio * 100).round();
 
@@ -208,7 +205,9 @@ class _ScorePageState extends State<ScorePage> {
                               child: Text(
                                 "- $_quoteAuthor",
                                 style: const TextStyle(
-                                    fontSize: 12, color: Colors.grey),
+                                  fontSize: 12,
+                                  color: Colors.grey,
+                                ),
                               ),
                             ),
                         ],
@@ -227,8 +226,10 @@ class _ScorePageState extends State<ScorePage> {
                   children: [
                     const Text(
                       "Günün Özeti",
-                      style:
-                          TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
                     const SizedBox(height: 10),
                     TextField(

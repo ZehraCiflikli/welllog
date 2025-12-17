@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+
 import '../providers/todo_provider.dart';
 import '../providers/auth_provider.dart';
 
@@ -15,15 +17,19 @@ class _TodoPageState extends State<TodoPage> {
   late TextEditingController _sigaraController;
   late TextEditingController _kahveController;
 
+  DateTime selectedDate = DateTime.now(); // 🔥 Tarih seçici için state
+
   @override
   void initState() {
     super.initState();
     final todo = context.read<TodoProvider>();
 
-    _sigaraController =
-        TextEditingController(text: todo.sigara >= 0 ? "${todo.sigara}" : "");
-    _kahveController =
-        TextEditingController(text: todo.kahve >= 0 ? "${todo.kahve}" : "");
+    _sigaraController = TextEditingController(
+      text: todo.sigara >= 0 ? "${todo.sigara}" : "",
+    );
+    _kahveController = TextEditingController(
+      text: todo.kahve >= 0 ? "${todo.kahve}" : "",
+    );
   }
 
   @override
@@ -33,12 +39,18 @@ class _TodoPageState extends State<TodoPage> {
     super.dispose();
   }
 
+  bool get isToday {
+    final now = DateTime.now();
+    return selectedDate.year == now.year &&
+        selectedDate.month == now.month &&
+        selectedDate.day == now.day;
+  }
+
   @override
   Widget build(BuildContext context) {
     final todo = context.watch<TodoProvider>();
     final auth = context.watch<AuthProvider>();
 
-    // 🔁 GÜN DEĞİŞTİYSE INPUTLARI TEMİZLE
     if (todo.consumeResetFlag()) {
       _sigaraController.clear();
       _kahveController.clear();
@@ -60,141 +72,243 @@ class _TodoPageState extends State<TodoPage> {
           ),
         ),
       ),
+
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          _threeDayHeader(),
 
-          // 😊 RUH HALİ
-          _card(
-            "Ruh Hali Takibi",
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: List.generate(5, (i) {
-                final index = i + 1;
-                return GestureDetector(
-                  onTap: () => todo.setRuhHali(index),
-                  child: Text(
-                    ["😢", "😟", "😐", "🙂", "😄"][i],
-                    style: TextStyle(
-                      fontSize: 32,
-                      backgroundColor:
-                          todo.ruhHali == index ? Colors.green.shade100 : null,
-                    ),
-                  ),
-                );
-              }),
-            ),
-          ),
+          const SizedBox(height: 10),
 
-          // 🚬 SİGARA
-          _card(
-            "Sigara Takibi",
-            _numberField(
-              controller: _sigaraController,
-              hint: "Kaç adet sigara içtin? (0 = hiç)",
-              onChanged: (v) =>
-                  todo.setSigara(v.isEmpty ? -1 : int.tryParse(v) ?? 0),
-            ),
-          ),
+          if (!isToday) _oldDayBanner(),
 
-          // ☕ KAHVE
-          _card(
-            "Kahve Takibi",
-            _numberField(
-              controller: _kahveController,
-              hint: "Kaç bardak kahve içtin?",
-              onChanged: (v) =>
-                  todo.setKahve(v.isEmpty ? -1 : int.tryParse(v) ?? 0),
-            ),
-          ),
-
-          // 🧴 CİLT BAKIMI
-          _card(
-            "Cilt Bakımı Takibi",
-            CheckboxListTile(
-              value: todo.ciltBakimi,
-              activeColor: Colors.green,
-              onChanged: (val) => todo.toggleCiltBakimi(val ?? false),
-              title: const Text("Bugün cilt bakımı yaptım"),
-            ),
-          ),
-
-          // 📱 EKRAN SÜRESİ
-          _card(
-            "Ekran Süresi Takibi",
-            _slider(
-              value: todo.ekranSuresi,
-              min: 1,
-              max: 10,
-              defaultValue: 1,
-              label:
-                  "${(todo.ekranSuresi < 0 ? 1 : todo.ekranSuresi).toInt()} saat",
-              onChanged: (v) => todo.setEkranSuresi(v),
-            ),
-          ),
-
-          // 🍽️ ÖĞÜN
-          _card(
-            "Öğün Takibi",
-            Column(
-              children: List.generate(3, (i) {
-                final labels = ["Kahvaltı", "Öğle", "Akşam"];
-                return CheckboxListTile(
-                  title: Text(labels[i]),
-                  value: todo.ogunler[i],
-                  activeColor: Colors.green,
-                  onChanged: (_) => todo.toggleOgun(i),
-                );
-              }),
-            ),
-          ),
-
-          // 🚶 ADIM
-          _card(
-            "Adım Takibi",
-            _slider(
-              value: todo.adim.toDouble(),
-              min: 0,
-              max: 10000,
-              defaultValue: 0,
-              label: "${todo.adim} adım",
-              onChanged: (v) => todo.setAdim(v.toInt()),
-            ),
-          ),
-
-          // 😴 UYKU
-          _card(
-            "Uyku Takibi",
-            _slider(
-              value: todo.uyku,
-              min: 0,
-              max: 12,
-              defaultValue: 0,
-              label:
-                  "${(todo.uyku < 0 ? 0 : todo.uyku).toInt()} saat",
-              onChanged: (v) => todo.setUyku(v),
-            ),
-          ),
-
-          // 💧 SU
-          _card(
-            "Su İçme Takibi",
-            _slider(
-              value: todo.su.toDouble(),
-              min: 0,
-              max: 10,
-              defaultValue: 0,
-              label: "${todo.su} bardak",
-              onChanged: (v) => todo.setSu(v.toInt()),
-            ),
-          ),
+          _buildForm(todo, enabled: isToday),
         ],
       ),
     );
   }
 
-  // ================= ORTAK WIDGETLER =================
+  // ============================================================
+  //  🔥 3 GÜNLÜK HEADER (sol – bugün – sağ)
+  // ============================================================
 
+  Widget _threeDayHeader() {
+    DateTime yesterday = selectedDate.subtract(const Duration(days: 1));
+    DateTime tomorrow = selectedDate.add(const Duration(days: 1));
+
+    final formatterShort = DateFormat("d MMM", "tr");
+    final formatterDay = DateFormat("E", "tr");
+
+    DateTime now = DateTime.now();
+    bool canGoForward =
+        !(selectedDate.year == now.year &&
+            selectedDate.month == now.month &&
+            selectedDate.day == now.day);
+
+    Widget buildDay(DateTime date, bool isSelected, bool disabled) {
+      return GestureDetector(
+        onTap: disabled
+            ? null
+            : () {
+                setState(() {
+                  selectedDate = date;
+                });
+              },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.green.shade600 : Colors.green.shade100,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Column(
+            children: [
+              Text(
+                formatterShort.format(date),
+                style: TextStyle(
+                  fontSize: 16,
+                  color: isSelected ? Colors.white : Colors.green.shade900,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                formatterDay.format(date),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: isSelected ? Colors.white70 : Colors.green.shade700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(child: buildDay(yesterday, yesterday == selectedDate, false)),
+        const SizedBox(width: 8),
+        Expanded(child: buildDay(selectedDate, true, false)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: buildDay(tomorrow, tomorrow == selectedDate, !canGoForward),
+        ),
+      ],
+    );
+  }
+
+  // ============================================================
+  //  🔶 GEÇMİŞ GÜN UYARISI
+  // ============================================================
+
+  Widget _oldDayBanner() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade100,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Text(
+        "Geçmiş güne bakıyorsun. Veriler sadece görüntülenebilir.",
+        style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  // ============================================================
+  //  🔥 FORM (aktif/pasif)
+  // ============================================================
+
+  Widget _buildForm(TodoProvider todo, {required bool enabled}) {
+    return AbsorbPointer(
+      absorbing: !enabled,
+      child: Opacity(
+        opacity: enabled ? 1 : 0.5,
+        child: Column(
+          children: [
+            _card(
+              "Bugün nasıl hissediyorsun?",
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: List.generate(5, (i) {
+                  final index = i + 1;
+                  return GestureDetector(
+                    onTap: () => todo.setRuhHali(index),
+                    child: Text(
+                      ["😢", "😟", "😐", "🙂", "😄"][i],
+                      style: TextStyle(
+                        fontSize: 32,
+                        backgroundColor: todo.ruhHali == index
+                            ? Colors.green.shade100
+                            : null,
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
+
+            _card(
+              "Uyku Takibi",
+              _slider(
+                value: todo.uyku,
+                min: 0,
+                max: 12,
+                defaultValue: 0,
+                label: "${(todo.uyku < 0 ? 0 : todo.uyku).toInt()} saat",
+                onChanged: (v) => todo.setUyku(v),
+              ),
+            ),
+
+            _card(
+              "Su Takibi",
+              _slider(
+                value: todo.su.toDouble(),
+                min: 0,
+                max: 10,
+                defaultValue: 0,
+                label: "${todo.su} bardak",
+                onChanged: (v) => todo.setSu(v.toInt()),
+              ),
+            ),
+
+            _card(
+              "Öğün Takibi",
+              Column(
+                children: List.generate(3, (i) {
+                  final labels = ["Kahvaltı", "Öğle", "Akşam"];
+                  return CheckboxListTile(
+                    title: Text(labels[i]),
+                    value: todo.ogunler[i],
+                    onChanged: (_) => todo.toggleOgun(i),
+                    activeColor: Colors.green,
+                  );
+                }),
+              ),
+            ),
+            _card(
+              "Adım Takibi",
+              _slider(
+                value: todo.adim.toDouble(),
+                min: 0,
+                max: 10000,
+                defaultValue: 0,
+                label: "${todo.adim} adım",
+                onChanged: (v) => todo.setAdim(v.toInt()),
+              ),
+            ),
+
+            _card(
+              "Kahve Takibi",
+              _numberField(
+                controller: _kahveController,
+                hint: "Kaç bardak kahve içtin?",
+                onChanged: (v) =>
+                    todo.setKahve(v.isEmpty ? -1 : int.tryParse(v) ?? 0),
+              ),
+            ),
+
+            _card(
+              "Sigara Takibi",
+              _numberField(
+                controller: _sigaraController,
+                hint: "Kaç adet sigara içtin?",
+                onChanged: (v) =>
+                    todo.setSigara(v.isEmpty ? -1 : int.tryParse(v) ?? 0),
+              ),
+            ),
+
+            _card(
+              "Cilt Bakımı Takibi",
+              CheckboxListTile(
+                value: todo.ciltBakimi,
+                onChanged: (val) => todo.toggleCiltBakimi(val ?? false),
+                title: const Text("Bugün cilt bakımı yaptım"),
+                activeColor: Colors.green,
+              ),
+            ),
+
+            _card(
+              "Ekran Süresi",
+              _slider(
+                value: todo.ekranSuresi,
+                min: 1,
+                max: 10,
+                defaultValue: 1,
+                label:
+                    "${(todo.ekranSuresi < 0 ? 1 : todo.ekranSuresi).toInt()} saat",
+                onChanged: (v) => todo.setEkranSuresi(v),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // 🔹 KART
   Widget _card(String title, Widget child) {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -203,9 +317,10 @@ class _TodoPageState extends State<TodoPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title,
-                style:
-                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
             const SizedBox(height: 10),
             child,
           ],
@@ -214,6 +329,8 @@ class _TodoPageState extends State<TodoPage> {
     );
   }
 
+  // ============================================================
+  // 🔹 SLIDER
   Widget _slider({
     required double value,
     required double min,
@@ -239,6 +356,8 @@ class _TodoPageState extends State<TodoPage> {
     );
   }
 
+  // ============================================================
+  // 🔹 NUMBER FIELD
   Widget _numberField({
     required TextEditingController controller,
     required String hint,
@@ -249,9 +368,7 @@ class _TodoPageState extends State<TodoPage> {
       keyboardType: TextInputType.number,
       decoration: InputDecoration(
         hintText: hint,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       ),
       onChanged: onChanged,
     );

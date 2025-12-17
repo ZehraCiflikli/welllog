@@ -32,7 +32,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             _currentIndex = index;
           });
         },
-        children: const [ScorePage(), TodoPage(), AccountPage()],
+        children: [ScorePage(), TodoPage(), AccountPage()],
       ),
 
       bottomNavigationBar: CurvedNavigationBar(

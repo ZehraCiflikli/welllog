@@ -10,10 +10,11 @@ import 'package:welllog/providers/auth_provider.dart';
 import 'package:welllog/pages/about_page.dart';
 import 'firebase_options.dart';
 import 'package:welllog/providers/todo_provider.dart';
-
+import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('tr'); // 👈 şart
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   runApp(
@@ -21,9 +22,7 @@ void main() async {
       providers: [
         // AuthProvider başlatılırken autoLogin() çağrılıyor.
         ChangeNotifierProvider(create: (_) => AuthProvider()..autoLogin()),
-       ChangeNotifierProvider(
-        create: (_) => TodoProvider(),
-      ),
+        ChangeNotifierProvider(create: (_) => TodoProvider()),
       ],
       child: const MyApp(),
     ),
