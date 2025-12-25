@@ -13,7 +13,6 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
-  // Form durumunu kontrol etmek için anahtar
   final _formKey = GlobalKey<FormState>();
 
   final fullNameController = TextEditingController();
@@ -91,7 +90,7 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
           SafeArea(
             child: Form(
-              key: _formKey, // Form kontrolü burada başlıyor
+              key: _formKey,
               child: Column(
                 children: [
                   Padding(
@@ -145,13 +144,11 @@ class _RegisterPageState extends State<RegisterPage> {
                                 _inputField("Ad ve soyadınızı girin", fullNameController),
                                 const SizedBox(height: 14),
                                 _label("E-posta"),
-                                _inputField("Mail adresinizi girin", emailController),
+                                _emailInputField("Mail adresinizi girin", emailController),
                                 const SizedBox(height: 14),
                                 _label("Şifre"),
                                 _passwordField("Şifrenizi girin", passwordController),
                                 const SizedBox(height: 14),
-
-                                // YAŞ, BOY, KİLO ALANLARI
                                 Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -162,7 +159,6 @@ class _RegisterPageState extends State<RegisterPage> {
                                     Expanded(child: _weightField()),
                                   ],
                                 ),
-
                                 const SizedBox(height: 30),
                                 _buildRegisterButton(auth, context),
                               ],
@@ -184,6 +180,20 @@ class _RegisterPageState extends State<RegisterPage> {
 
   // --- ÖZEL VALIDASYONLU ALANLAR ---
 
+  Widget _emailInputField(String hint, TextEditingController controller) {
+    return TextFormField(
+      controller: controller,
+      keyboardType: TextInputType.emailAddress,
+      decoration: _inputDecoration(hint),
+      validator: (value) {
+        if (value == null || value.isEmpty) return "Boş bırakılamaz";
+        final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+        if (!emailRegex.hasMatch(value)) return "Geçersiz mail formatı";
+        return null;
+      },
+    );
+  }
+
   Widget _ageField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -192,17 +202,10 @@ class _RegisterPageState extends State<RegisterPage> {
         TextFormField(
           controller: ageController,
           keyboardType: TextInputType.number,
-          inputFormatters: [
-            FilteringTextInputFormatter.allow(RegExp(r'(^\d*\.?\d*)')),
-          ],
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           style: const TextStyle(fontSize: 13),
           decoration: _inputDecoration("Yaş"),
-          validator: (value) {
-            if (value == null || value.isEmpty || int.tryParse(value) == null) {
-              return "Sayısal veri giriniz";
-            }
-            return null;
-          },
+          validator: (value) => (value == null || value.isEmpty) ? "Boş" : null,
         ),
       ],
     );
@@ -215,20 +218,11 @@ class _RegisterPageState extends State<RegisterPage> {
         _label("Boy"),
         TextFormField(
           controller: heightController,
-          // Sadece sayısal klavyeyi açar
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          // Yazılımsal olarak sadece rakam ve ondalık işaretine izin verir
-          inputFormatters: [
-            FilteringTextInputFormatter.allow(RegExp(r'(^\d*\.?\d*)')),
-          ],
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           style: const TextStyle(fontSize: 13),
           decoration: _inputDecoration("cm"),
-          validator: (value) {
-            if (value == null || value.isEmpty || double.tryParse(value) == null) {
-              return "Hatalı";
-            }
-            return null;
-          },
+          validator: (value) => (value == null || value.isEmpty) ? "Boş" : null,
         ),
       ],
     );
@@ -241,35 +235,53 @@ class _RegisterPageState extends State<RegisterPage> {
         _label("Kilo"),
         TextFormField(
           controller: weightController,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          inputFormatters: [
-            FilteringTextInputFormatter.allow(RegExp(r'(^\d*\.?\d*)')),
-          ],
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           style: const TextStyle(fontSize: 13),
           decoration: _inputDecoration("kg"),
-          validator: (value) {
-            if (value == null || value.isEmpty || double.tryParse(value) == null) {
-              return "Sayısal veri giriniz";
-            }
-            return null;
-          },
+          validator: (value) => (value == null || value.isEmpty) ? "Boş" : null,
         ),
       ],
     );
   }
 
-  // --- GENEL YARDIMCI METOTLAR ---
+  // --- MERKEZİ TASARIM METODU (Tüm Borderlar Burada) ---
 
   InputDecoration _inputDecoration(String hint) {
     return InputDecoration(
       hintText: hint,
       filled: true,
       fillColor: Colors.grey.shade50,
-      errorStyle: const TextStyle(color: Colors.red, fontSize: 10),
+      errorStyle: const TextStyle(color: Colors.red, fontSize: 11),
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+
+      // Normal Durum
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide.none,
+      ),
+
+      // Hata Durumu (Kırmızı Kenarlık)
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Colors.redAccent, width: 1),
+      ),
+
+      // Hata Varken Seçili Olma Durumu
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Colors.red, width: 1.5),
+      ),
+
+      // Normal Seçili Olma Durumu
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Color(0xFF145A32), width: 1),
+      ),
     );
   }
+
+  // --- DİĞER YARDIMCI METOTLAR ---
 
   Widget _sectionHeader() {
     return Row(
@@ -320,14 +332,13 @@ class _RegisterPageState extends State<RegisterPage> {
           ? const Center(child: CircularProgressIndicator(color: Color(0xFF145A32)))
           : ElevatedButton(
         onPressed: () async {
-          // Validasyon kontrolü
           if (_formKey.currentState!.validate()) {
             final error = await auth.registerUser(
               fullName: fullNameController.text.trim(),
               email: emailController.text.trim(),
               password: passwordController.text.trim(),
               age: int.parse(ageController.text),
-              height: double.parse(heightController.text).toInt(), // Provider int bekliyorsa toInt()
+              height: double.parse(heightController.text).toInt(),
               weight: double.parse(weightController.text).toInt(),
             );
 
